@@ -1,14 +1,3 @@
-"""
-Domain Models Package.
+from app.models.market_data import MarketData
 
-Planned for Stage 4 (Database Integration):
-- User
-- InvestorProfile
-- MarketData
-- EngineeredFeature
-- PortfolioRecommendation
-- PortfolioAllocation
-- ExplainabilityResult
-- BacktestingResult
-- WhatIfScenarioResult
-"""
+__all__ = ["MarketData"]

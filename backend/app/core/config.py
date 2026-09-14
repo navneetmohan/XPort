@@ -19,6 +19,19 @@ class Settings(BaseSettings):
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
 
+    # Market Data Acquisition Settings
+    MARKET_DATA_DEFAULT_SYMBOLS: Union[List[str], str] = [
+        "RELIANCE.NS",
+        "TCS.NS",
+        "HDFCBANK.NS",
+        "INFY.NS",
+        "ICICIBANK.NS",
+        "NIFTYBEES.NS",
+        "GOLDBEES.NS",
+    ]
+    MARKET_DATA_DEFAULT_LOOKBACK_DAYS: int = 1825
+    MARKET_DATA_SYNC_CRON: str = "0 12 * * 1-5"
+
     # CORS configuration
     BACKEND_CORS_ORIGINS: Union[List[str], str] = [
         "http://localhost",
@@ -26,6 +39,20 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://localhost:5173",
     ]
+
+    @field_validator("MARKET_DATA_DEFAULT_SYMBOLS", mode="before")
+    @classmethod
+    def assemble_market_data_symbols(cls, v: Union[str, List[str]]) -> List[str]:
+        if isinstance(v, str) and not v.startswith("["):
+            return [i.strip() for i in v.split(",") if i.strip()]
+        elif isinstance(v, str) and v.startswith("["):
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return [str(item) for item in parsed]
+            except Exception:
+                pass
+        return v if isinstance(v, list) else []
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod

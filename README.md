@@ -1,7 +1,7 @@
 # XPort — Explainable Multi-Objective Portfolio Optimization Framework
 
-> **Status: Stage 1 Foundation (~15% Complete)**  
-> This repository represents the **initial foundational architecture** of XPort. Core infrastructure, service skeletons, API contracts, and testing pipelines are established, while domain-heavy algorithmic modules (NSGA-II, SHAP, Yahoo Finance data pipelines) are scheduled for subsequent stages.
+> **Status: Stage 2 Market Data Acquisition Completed (~25% Complete)**  
+> Stage 1 foundation and Stage 2 market data acquisition, validation, persistence, and async synchronization pipelines are fully operational.
 
 ---
 
@@ -124,8 +124,8 @@ As defined in Section 10 of the Software Design Document (SDD), development foll
 | Stage | Milestone | Status in this Release |
 | :--- | :--- | :--- |
 | **Stage 1** | **Project Foundation (~15%)** | **COMPLETED**: Monorepo layout, FastAPI skeleton, React+Vite UI, Celery/Redis connection, Alembic setup, Nginx reverse proxy, CI & tests. |
-| **Stage 2** | Market Data Acquisition | *Next Phase*: Yahoo Finance API integration, OHLCV ingestion. |
-| **Stage 3** | Feature Engineering | *Planned*: Computation of SMA, EMA, RSI, and MACD indicators. |
+| **Stage 2** | **Market Data Acquisition (~25%)** | **COMPLETED**: Yahoo Finance service, Indian NSE ticker universe, data validation rules, PostgreSQL bulk upserts, Alembic migration 0002, Celery async task & Beat schedule, market-data API endpoints. |
+| **Stage 3** | Feature Engineering | *Next Phase*: Computation of SMA, EMA, RSI, and MACD indicators. |
 | **Stage 4** | Database Integration | *Planned*: Full domain schema (User, Profile, MarketData, Recommendations, Allocations). |
 | **Stage 5** | Backend Services | *Planned*: Google OAuth 2.0 sessions, User Profile Service, Recommendation Orchestrator. |
 | **Stage 6** | Frontend Polish | *Planned*: Interactive state bindings, charts, and API polling integration. |
