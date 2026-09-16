@@ -19,7 +19,8 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <footer
         style={{
           borderTop: '1px solid var(--border-color)',
-          background: 'rgba(11, 15, 25, 0.95)',
+          background: 'var(--bg-footer)',
+          backdropFilter: 'blur(12px)',
           padding: '1.25rem 0',
           marginTop: 'auto',
         }}

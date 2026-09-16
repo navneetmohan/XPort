@@ -39,12 +39,12 @@ export const WhatIf: React.FC = () => {
 
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      <div className="glass-panel" style={{ padding: '1.75rem 2rem' }}>
+      <div className="glass-panel" style={{ padding: '1.75rem 2rem', background: 'var(--bg-banner)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
           <span className="badge badge-amber">Scenario Analysis (UI-05)</span>
           <span className="badge badge-blue">Stage 9 Target</span>
         </div>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }}>What-if Scenario Simulator</h1>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)' }}>What-if Scenario Simulator</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
           Modify investment parameters to test hypothetical allocations and observe sensitivity trade-offs side-by-side without altering your primary recommendation.
         </p>
@@ -59,7 +59,7 @@ export const WhatIf: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             gap: '0.75rem',
-            background: 'rgba(6, 182, 212, 0.08)',
+            background: 'var(--accent-cyan-subtle)',
           }}
         >
           <Info size={20} color="var(--accent-cyan)" />
@@ -87,7 +87,7 @@ export const WhatIf: React.FC = () => {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Investment Capital</span>
-                <span style={{ fontWeight: 700 }}>₹{amount.toLocaleString()}</span>
+                <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>₹{amount.toLocaleString()}</span>
               </div>
               <input
                 type="range"
@@ -103,7 +103,7 @@ export const WhatIf: React.FC = () => {
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.4rem' }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Time Horizon</span>
-                <span style={{ fontWeight: 700 }}>{horizon} Years</span>
+                <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{horizon} Years</span>
               </div>
               <input
                 type="range"
@@ -128,11 +128,12 @@ export const WhatIf: React.FC = () => {
                     style={{
                       padding: '0.5rem',
                       borderRadius: 'var(--radius-sm)',
-                      background: risk === lvl ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.03)',
+                      background: risk === lvl ? 'var(--primary)' : 'var(--bg-subtle)',
                       border: risk === lvl ? '1px solid var(--primary)' : '1px solid var(--border-color)',
-                      color: risk === lvl ? '#FFF' : 'var(--text-muted)',
+                      color: risk === lvl ? '#FFFFFF' : 'var(--text-secondary)',
                       fontSize: '0.8rem',
                       fontWeight: 600,
+                      transition: 'all 0.15s ease',
                     }}
                   >
                     {lvl}
@@ -171,6 +172,7 @@ export const WhatIf: React.FC = () => {
               style={{
                 border: '1px dashed var(--border-color)',
                 borderRadius: 'var(--radius-md)',
+                background: 'var(--bg-subtle)',
                 padding: '1rem',
                 display: 'flex',
                 flexDirection: 'column',
@@ -182,7 +184,9 @@ export const WhatIf: React.FC = () => {
               <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
                 Baseline Allocation
               </div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, marginTop: '0.5rem' }}>Moderate</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, marginTop: '0.5rem', color: 'var(--text-primary)' }}>
+                Moderate
+              </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
                 50% Equities / 50% Debt
               </div>
@@ -198,13 +202,13 @@ export const WhatIf: React.FC = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 textAlign: 'center',
-                background: 'rgba(59, 130, 246, 0.05)',
+                background: 'var(--primary-subtle)',
               }}
             >
-              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--accent-cyan)' }}>
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)' }}>
                 Simulated Allocation
               </div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 800, marginTop: '0.5rem', color: 'var(--accent-cyan)' }}>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, marginTop: '0.5rem', color: 'var(--primary)' }}>
                 {risk}
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>

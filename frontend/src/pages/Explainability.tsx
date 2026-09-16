@@ -14,12 +14,12 @@ export const Explainability: React.FC = () => {
   return (
     <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       {/* Header */}
-      <div className="glass-panel" style={{ padding: '1.75rem 2rem' }}>
+      <div className="glass-panel" style={{ padding: '1.75rem 2rem', background: 'var(--bg-banner)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
           <span className="badge badge-purple">XAI Module (UI-04)</span>
           <span className="badge badge-blue">Stage 8 Target</span>
         </div>
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }}>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--text-primary)' }}>
           Explainability & Feature Contributions
         </h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
@@ -55,7 +55,7 @@ export const Explainability: React.FC = () => {
                 key={idx}
                 style={{
                   padding: '0.75rem',
-                  background: 'rgba(255, 255, 255, 0.02)',
+                  background: 'var(--bg-subtle)',
                   borderRadius: 'var(--radius-sm)',
                   border: '1px solid var(--border-color)',
                   display: 'flex',
@@ -96,8 +96,8 @@ export const Explainability: React.FC = () => {
           <div
             style={{
               padding: '1rem',
-              background: 'rgba(6, 182, 212, 0.05)',
-              border: '1px solid rgba(6, 182, 212, 0.2)',
+              background: 'var(--accent-cyan-subtle)',
+              border: '1px solid rgba(2, 132, 199, 0.2)',
               borderRadius: 'var(--radius-md)',
               lineHeight: 1.6,
               fontSize: '0.875rem',
@@ -118,7 +118,7 @@ export const Explainability: React.FC = () => {
             style={{
               marginTop: '1.5rem',
               padding: '1rem',
-              background: 'rgba(255, 255, 255, 0.02)',
+              background: 'var(--bg-subtle)',
               borderRadius: 'var(--radius-md)',
               border: '1px dashed var(--border-color)',
             }}

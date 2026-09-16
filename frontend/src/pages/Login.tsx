@@ -38,18 +38,18 @@ export const Login: React.FC = () => {
             width: '3.5rem',
             height: '3.5rem',
             borderRadius: '16px',
-            background: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
+            background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             margin: '0 auto 1.25rem',
-            boxShadow: '0 0 20px rgba(59, 130, 246, 0.4)',
+            boxShadow: '0 0 20px var(--primary-glow)',
           }}
         >
           <Layers size={28} color="#FFFFFF" />
         </div>
 
-        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '0.5rem' }}>
+        <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
           Welcome to XPort
         </h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2rem' }}>
@@ -57,7 +57,19 @@ export const Login: React.FC = () => {
         </p>
 
         {/* Feature Highlights */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', textAlign: 'left', marginBottom: '2rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.75rem',
+            textAlign: 'left',
+            marginBottom: '2rem',
+            background: 'var(--bg-subtle)',
+            border: '1px solid var(--border-color)',
+            padding: '1rem',
+            borderRadius: 'var(--radius-md)',
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
             <Cpu size={16} color="var(--primary)" />
             <span>NSGA-II multi-objective genetic optimization</span>
@@ -83,7 +95,8 @@ export const Login: React.FC = () => {
             gap: '0.75rem',
             background: '#FFFFFF',
             color: '#1F2937',
-            border: 'none',
+            border: '1px solid var(--border-color)',
+            boxShadow: '0 2px 8px rgba(15, 23, 42, 0.08)',
           }}
         >
           <svg width="20" height="20" viewBox="0 0 24 24">

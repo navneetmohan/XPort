@@ -51,7 +51,7 @@ export const Dashboard: React.FC = () => {
         className="glass-panel"
         style={{
           padding: '1.75rem 2rem',
-          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%)',
+          background: 'var(--bg-banner)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -64,7 +64,7 @@ export const Dashboard: React.FC = () => {
             <span className="badge badge-blue">Foundation Phase 1 (~15%)</span>
             <span className="badge badge-emerald">Interactive Dashboard</span>
           </div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
             Portfolio Optimization Overview
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
@@ -94,7 +94,7 @@ export const Dashboard: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             gap: '0.75rem',
-            background: 'rgba(6, 182, 212, 0.08)',
+            background: 'var(--accent-cyan-subtle)',
           }}
         >
           <Info size={20} color="var(--accent-cyan)" />
@@ -127,7 +127,7 @@ export const Dashboard: React.FC = () => {
         <div className="glass-panel" style={{ padding: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
             <h2 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Investment Profile</h2>
-            <Link to="/profile" style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>
+            <Link to="/profile" style={{ fontSize: '0.8rem', color: 'var(--primary)', fontWeight: 600 }}>
               Edit Profile &rarr;
             </Link>
           </div>
@@ -138,8 +138,9 @@ export const Dashboard: React.FC = () => {
                 display: 'flex',
                 justifyContent: 'space-between',
                 padding: '0.75rem',
-                background: 'rgba(255, 255, 255, 0.02)',
+                background: 'var(--bg-subtle)',
                 borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--border-color)',
               }}
             >
               <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Risk Tolerance</span>
@@ -151,8 +152,9 @@ export const Dashboard: React.FC = () => {
                 display: 'flex',
                 justifyContent: 'space-between',
                 padding: '0.75rem',
-                background: 'rgba(255, 255, 255, 0.02)',
+                background: 'var(--bg-subtle)',
                 borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--border-color)',
               }}
             >
               <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Time Horizon</span>
@@ -164,8 +166,9 @@ export const Dashboard: React.FC = () => {
                 display: 'flex',
                 justifyContent: 'space-between',
                 padding: '0.75rem',
-                background: 'rgba(255, 255, 255, 0.02)',
+                background: 'var(--bg-subtle)',
                 borderRadius: 'var(--radius-sm)',
+                border: '1px solid var(--border-color)',
               }}
             >
               <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Target Universe</span>
@@ -178,8 +181,8 @@ export const Dashboard: React.FC = () => {
               style={{
                 marginTop: '0.5rem',
                 padding: '0.75rem',
-                background: 'rgba(16, 185, 129, 0.08)',
-                border: '1px solid rgba(16, 185, 129, 0.2)',
+                background: 'var(--accent-emerald-subtle)',
+                border: '1px solid rgba(5, 150, 105, 0.25)',
                 borderRadius: 'var(--radius-sm)',
                 display: 'flex',
                 alignItems: 'center',
@@ -187,7 +190,7 @@ export const Dashboard: React.FC = () => {
               }}
             >
               <CheckCircle2 size={16} color="var(--accent-emerald)" />
-              <span style={{ fontSize: '0.8rem', color: '#A7F3D0' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--accent-emerald)', fontWeight: 600 }}>
                 Foundation Baseline Profile Active
               </span>
             </div>
@@ -206,7 +209,7 @@ export const Dashboard: React.FC = () => {
             style={{
               height: '180px',
               borderRadius: 'var(--radius-md)',
-              background: 'rgba(255, 255, 255, 0.02)',
+              background: 'var(--bg-subtle)',
               border: '1px dashed var(--border-color)',
               display: 'flex',
               flexDirection: 'column',
@@ -245,7 +248,7 @@ export const Dashboard: React.FC = () => {
             style={{
               height: '180px',
               borderRadius: 'var(--radius-md)',
-              background: 'rgba(255, 255, 255, 0.02)',
+              background: 'var(--bg-subtle)',
               border: '1px dashed var(--border-color)',
               display: 'flex',
               flexDirection: 'column',
@@ -290,25 +293,25 @@ export const Dashboard: React.FC = () => {
             gap: '1rem',
           }}
         >
-          <div style={{ padding: '0.75rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-sm)' }}>
+          <div style={{ padding: '0.75rem', background: 'var(--bg-subtle)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Edge Gateway</div>
             <div style={{ fontSize: '0.85rem', fontWeight: 600, marginTop: '0.2rem' }}>Nginx Reverse Proxy</div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--accent-emerald)', marginTop: '0.2rem' }}>Port 80 (Gateway)</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--accent-emerald)', marginTop: '0.2rem', fontWeight: 600 }}>Port 80 (Gateway)</div>
           </div>
-          <div style={{ padding: '0.75rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-sm)' }}>
+          <div style={{ padding: '0.75rem', background: 'var(--bg-subtle)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Application Tier</div>
             <div style={{ fontSize: '0.85rem', fontWeight: 600, marginTop: '0.2rem' }}>FastAPI REST Service</div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--accent-emerald)', marginTop: '0.2rem' }}>Port 8000 (API v1)</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--accent-emerald)', marginTop: '0.2rem', fontWeight: 600 }}>Port 8000 (API v1)</div>
           </div>
-          <div style={{ padding: '0.75rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-sm)' }}>
+          <div style={{ padding: '0.75rem', background: 'var(--bg-subtle)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Asynchronous Tasks</div>
             <div style={{ fontSize: '0.85rem', fontWeight: 600, marginTop: '0.2rem' }}>Celery Worker + Redis</div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--accent-cyan)', marginTop: '0.2rem' }}>Port 6379 (Broker)</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--accent-cyan)', marginTop: '0.2rem', fontWeight: 600 }}>Port 6379 (Broker)</div>
           </div>
-          <div style={{ padding: '0.75rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 'var(--radius-sm)' }}>
+          <div style={{ padding: '0.75rem', background: 'var(--bg-subtle)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)' }}>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Relational Storage</div>
             <div style={{ fontSize: '0.85rem', fontWeight: 600, marginTop: '0.2rem' }}>PostgreSQL 15 + Alembic</div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--accent-purple)', marginTop: '0.2rem' }}>Port 5432 (Database)</div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--accent-purple)', marginTop: '0.2rem', fontWeight: 600 }}>Port 5432 (Database)</div>
           </div>
         </div>
       </div>

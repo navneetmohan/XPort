@@ -8,6 +8,8 @@ import {
   Sliders,
   User,
   RefreshCw,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { fetchHealthStatus } from '../services/healthService';
 import { HealthStatus } from '../types';
@@ -17,6 +19,21 @@ export const Navbar: React.FC = () => {
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const { user, isAuthenticated, logout } = useAuthStore();
+
+  // Initialize theme from localStorage (defaults to light themed)
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('xport_theme');
+    return saved === 'dark' ? 'dark' : 'light';
+  });
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('xport_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
 
   const checkHealth = async () => {
     setLoading(true);
@@ -48,11 +65,12 @@ export const Navbar: React.FC = () => {
     <header
       style={{
         borderBottom: '1px solid var(--border-color)',
-        background: 'rgba(11, 15, 25, 0.85)',
+        background: 'var(--bg-navbar)',
         backdropFilter: 'blur(16px)',
         position: 'sticky',
         top: 0,
         zIndex: 50,
+        transition: 'background-color 0.25s ease, border-color 0.25s ease',
       }}
     >
       <div
@@ -75,14 +93,14 @@ export const Navbar: React.FC = () => {
         >
           <div
             style={{
-              width: '2rem',
-              height: '2rem',
+              width: '2.1rem',
+              height: '2.1rem',
               borderRadius: '8px',
-              background: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)',
+              background: 'linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 0 15px rgba(59, 130, 246, 0.4)',
+              boxShadow: '0 0 15px var(--primary-glow)',
             }}
           >
             <Layers size={18} color="#FFFFFF" />
@@ -90,10 +108,10 @@ export const Navbar: React.FC = () => {
           <div>
             <span
               style={{
-                fontSize: '1.2rem',
+                fontSize: '1.25rem',
                 fontWeight: 800,
                 letterSpacing: '-0.02em',
-                background: 'linear-gradient(to right, #FFFFFF, #93C5FD)',
+                background: 'linear-gradient(135deg, var(--brand-gradient-start), var(--brand-gradient-end))',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
               }}
@@ -103,10 +121,11 @@ export const Navbar: React.FC = () => {
             <span
               style={{
                 fontSize: '0.65rem',
-                marginLeft: '0.4rem',
-                padding: '0.15rem 0.4rem',
-                background: 'rgba(59, 130, 246, 0.2)',
-                color: '#60A5FA',
+                marginLeft: '0.45rem',
+                padding: '0.15rem 0.45rem',
+                background: 'var(--primary-subtle)',
+                color: 'var(--primary)',
+                border: '1px solid var(--border-color)',
                 borderRadius: '4px',
                 fontWeight: 600,
               }}
@@ -130,12 +149,12 @@ export const Navbar: React.FC = () => {
                   gap: '0.4rem',
                   padding: '0.45rem 0.85rem',
                   fontSize: '0.85rem',
-                  fontWeight: 500,
+                  fontWeight: 600,
                   borderRadius: 'var(--radius-md)',
-                  color: isActive ? '#FFFFFF' : 'var(--text-secondary)',
-                  background: isActive ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
+                  color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
+                  background: isActive ? 'var(--primary-subtle)' : 'transparent',
                   border: isActive
-                    ? '1px solid rgba(59, 130, 246, 0.3)'
+                    ? '1px solid var(--border-hover)'
                     : '1px solid transparent',
                   transition: 'all 0.15s ease',
                 })}
@@ -148,7 +167,29 @@ export const Navbar: React.FC = () => {
         </nav>
 
         {/* Right Status & Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
+            title={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '2.1rem',
+              height: '2.1rem',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--bg-subtle)',
+              border: '1px solid var(--border-color)',
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+          </button>
+
           {/* Backend Status Pill */}
           <div
             onClick={checkHealth}
@@ -158,7 +199,7 @@ export const Navbar: React.FC = () => {
               alignItems: 'center',
               gap: '0.45rem',
               padding: '0.35rem 0.75rem',
-              background: 'rgba(255, 255, 255, 0.04)',
+              background: 'var(--bg-subtle)',
               border: '1px solid var(--border-color)',
               borderRadius: 'var(--radius-full)',
               fontSize: '0.75rem',
@@ -187,9 +228,9 @@ export const Navbar: React.FC = () => {
             </span>
             <RefreshCw
               size={12}
+              className={loading ? 'spin' : ''}
               style={{
                 color: 'var(--text-muted)',
-                animation: loading ? 'spin 1s linear infinite' : 'none',
               }}
             />
           </div>

@@ -45,7 +45,8 @@ export const Profile: React.FC = () => {
               width: '2.5rem',
               height: '2.5rem',
               borderRadius: '10px',
-              background: 'rgba(59, 130, 246, 0.15)',
+              background: 'var(--primary-subtle)',
+              border: '1px solid var(--border-color)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -54,7 +55,7 @@ export const Profile: React.FC = () => {
             <User size={20} color="var(--primary)" />
           </div>
           <div>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Investor Profile Setup</h1>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>Investor Profile Setup</h1>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
               Configure your optimization parameters according to SRS UC-02.
             </p>
@@ -65,8 +66,8 @@ export const Profile: React.FC = () => {
           <div
             style={{
               padding: '0.85rem 1.25rem',
-              background: 'rgba(6, 182, 212, 0.1)',
-              border: '1px solid rgba(6, 182, 212, 0.3)',
+              background: 'var(--accent-cyan-subtle)',
+              border: '1px solid rgba(2, 132, 199, 0.25)',
               borderRadius: 'var(--radius-md)',
               fontSize: '0.85rem',
               color: 'var(--accent-cyan)',
@@ -97,7 +98,7 @@ export const Profile: React.FC = () => {
                   style={{
                     padding: '0.75rem',
                     borderRadius: 'var(--radius-md)',
-                    background: profile.riskTolerance === level ? 'rgba(59, 130, 246, 0.2)' : 'rgba(255, 255, 255, 0.03)',
+                    background: profile.riskTolerance === level ? 'var(--primary)' : 'var(--bg-subtle)',
                     border: profile.riskTolerance === level ? '1px solid var(--primary)' : '1px solid var(--border-color)',
                     color: profile.riskTolerance === level ? '#FFFFFF' : 'var(--text-secondary)',
                     fontWeight: 600,
@@ -146,7 +147,7 @@ export const Profile: React.FC = () => {
             <div
               style={{
                 padding: '0.75rem',
-                background: 'rgba(255, 255, 255, 0.02)',
+                background: 'var(--bg-subtle)',
                 borderRadius: 'var(--radius-md)',
                 border: '1px solid var(--border-color)',
                 fontSize: '0.85rem',
