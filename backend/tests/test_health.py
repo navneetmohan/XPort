@@ -28,3 +28,22 @@ def test_root_health_alias(client: TestClient):
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
+
+
+def test_swagger_docs_endpoint(client: TestClient):
+    """Verify that /api/v1/docs serves custom high-contrast themed Swagger UI."""
+    response = client.get("/api/v1/docs")
+    assert response.status_code == 200
+    assert "text/html" in response.headers.get("content-type", "")
+    assert "xport-custom-header" in response.text
+    assert "themeToggleBtn" in response.text
+    assert "data-theme" in response.text
+
+
+def test_root_docs_alias(client: TestClient):
+    """Verify that root /docs alias serves custom high-contrast themed Swagger UI."""
+    response = client.get("/docs")
+    assert response.status_code == 200
+    assert "text/html" in response.headers.get("content-type", "")
+    assert "xport-custom-header" in response.text
+

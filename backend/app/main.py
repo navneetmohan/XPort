@@ -7,6 +7,7 @@ from app.core.config import settings
 from app.api.v1.api import api_router
 from app.schemas.common import HealthCheckResponse
 from app.api.v1.endpoints.health import get_health
+from app.core.swagger_ui import get_custom_swagger_ui_html
 
 # Configure basic logging
 logging.basicConfig(
@@ -19,10 +20,20 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    docs_url=f"{settings.API_V1_STR}/docs",
+    docs_url=None,
     redoc_url=f"{settings.API_V1_STR}/redoc",
     description="XPort Portfolio Optimization Framework REST API (Foundation Stage)",
 )
+
+# Custom High-Contrast, Accessible Swagger UI with Dark/Light Theme Switching
+@app.get(f"{settings.API_V1_STR}/docs", include_in_schema=False)
+@app.get("/docs", include_in_schema=False)
+def custom_swagger_docs():
+    return get_custom_swagger_ui_html(
+        openapi_url=f"{settings.API_V1_STR}/openapi.json",
+        title=f"{settings.PROJECT_NAME} - Interactive API Docs",
+        version=settings.VERSION,
+    )
 
 # CORS Middleware setup
 if settings.BACKEND_CORS_ORIGINS:
