@@ -68,6 +68,6 @@ jobs:
           CELERY_BROKER_URL: redis://localhost:6379/0
           CELERY_RESULT_BACKEND: redis://localhost:6379/0
           ENVIRONMENT: test
+          PYTHONPATH: backend
         run: |
-          pytest backend/tests
-          pytest tests/test_compose_spec.py
+          pytest backend/tests tests/test_compose_spec.py
