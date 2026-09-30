@@ -18,6 +18,7 @@ dependencies = [
     "yfinance>=0.2.36",
     "pandas>=2.0.0",
     "httpx>=0.26.0,<1.0.0",
+    "pymoo>=0.6.0",
 ]
 
 [tool.pytest.ini_options]

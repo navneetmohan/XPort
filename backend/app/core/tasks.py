@@ -3,7 +3,10 @@ import logging
 from typing import Any, Dict, List, Optional
 from app.core.celery_app import celery
 from app.db.session import SessionLocal
+from app.repositories.recommendation_repository import RecommendationRepository
+from app.services.feature_engineering_service import FeatureEngineeringService
 from app.services.market_data_service import MarketDataService
+from app.services.portfolio_optimizer import PortfolioOptimizer
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +49,13 @@ def sync_market_data_task(
             start_date=parsed_start,
             end_date=parsed_end,
         )
+        # Automatically compute technical indicators on freshly synced data if database session active
+        try:
+            fe_service = FeatureEngineeringService(db)
+            fe_service.generate_features_for_all(symbols=symbols)
+        except Exception as fe_exc:
+            logger.warning(f"Feature calculation notice during sync task: {fe_exc}")
+
         return result
     except Exception as exc:
         logger.error(f"Error executing sync_market_data_task: {exc}", exc_info=True)
@@ -54,5 +64,80 @@ def sync_market_data_task(
             "error": str(exc),
             "symbols_requested": symbols or [],
         }
+    finally:
+        db.close()
+
+
+@celery.task(name="app.core.tasks.calculate_features_task")
+def calculate_features_task(symbols: Optional[List[str]] = None) -> Dict[str, Any]:
+    """
+    Celery task to compute technical indicators and feature engineering records.
+    """
+    logger.info(f"Executing calculate_features_task with symbols: {symbols}")
+    db = SessionLocal()
+    try:
+        service = FeatureEngineeringService(db)
+        return service.generate_features_for_all(symbols=symbols)
+    except Exception as exc:
+        logger.error(f"Error executing calculate_features_task: {exc}", exc_info=True)
+        return {"status": "error", "error": str(exc)}
+    finally:
+        db.close()
+
+
+@celery.task(name="app.core.tasks.run_portfolio_optimization_task", bind=True)
+def run_portfolio_optimization_task(
+    self,
+    symbols: Optional[List[str]] = None,
+    pop_size: int = 50,
+    generations: int = 50,
+    recommendation_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Celery background task for NSGA-II Multi-Objective Portfolio Optimization.
+    Executes optimization and persists Pareto portfolio results in PostgreSQL.
+    """
+    task_id = self.request.id if hasattr(self, "request") and self.request else None
+    logger.info(f"Executing run_portfolio_optimization_task: symbols={symbols}, task_id={task_id}")
+    db = SessionLocal()
+    rec_repo = RecommendationRepository(db)
+
+    # Ensure recommendation record exists
+    if recommendation_id:
+        existing = rec_repo.get_by_id_or_task_id(recommendation_id)
+        if not existing:
+            rec_repo.create_recommendation(
+                symbols={"symbols": symbols or []},
+                task_id=task_id,
+                recommendation_id=recommendation_id,
+            )
+        rec_repo.update_recommendation(recommendation_id, status="RUNNING")
+
+    try:
+        # First ensure features are generated for symbols if needed
+        fe_service = FeatureEngineeringService(db)
+        fe_service.generate_features_for_all(symbols=symbols)
+
+        # Run NSGA-II Optimization
+        optimizer = PortfolioOptimizer(db)
+        result = optimizer.optimize(
+            symbols=symbols or ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS"],
+            pop_size=pop_size,
+            generations=generations,
+        )
+
+        result["task_id"] = task_id
+        result["recommendation_id"] = recommendation_id
+
+        if recommendation_id:
+            rec_repo.update_recommendation(recommendation_id, status="COMPLETED", result_data=result)
+
+        return result
+    except Exception as exc:
+        logger.error(f"Error executing run_portfolio_optimization_task: {exc}", exc_info=True)
+        err_res = {"status": "FAILED", "error": str(exc), "task_id": task_id}
+        if recommendation_id:
+            rec_repo.update_recommendation(recommendation_id, status="FAILED", result_data=err_res)
+        return err_res
     finally:
         db.close()
