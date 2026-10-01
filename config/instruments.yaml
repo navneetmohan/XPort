@@ -1,0 +1,121 @@
+# XPort Curated Instrument Universe Configuration
+# Defines representative financial instruments across conceptual asset classes:
+# - stocks
+# - mutual_funds
+# - bonds
+# - gold
+# - cash
+
+version: "1.0"
+
+asset_classes:
+  stocks:
+    name: "Equities / Stocks"
+    description: "Exchange-traded equity shares of public companies."
+  mutual_funds:
+    name: "Mutual Funds / Broad Market ETFs"
+    description: "Broad-market equity index funds and mutual funds."
+  bonds:
+    name: "Fixed Income / Bonds"
+    description: "Government and corporate fixed-income securities and gilt funds."
+  gold:
+    name: "Precious Metals / Gold"
+    description: "Physical gold-backed ETFs and sovereign gold commodities."
+  cash:
+    name: "Cash & Liquid Reserves"
+    description: "Cash equivalents, liquid overnight money market funds."
+
+instruments:
+  # Stocks
+  - symbol: "RELIANCE.NS"
+    name: "Reliance Industries Limited"
+    asset_class: "stocks"
+    currency: "INR"
+    exchange: "NSE"
+    is_yahoo_supported: true
+    description: "Conglomerate with energy, retail, and telecommunications operations."
+
+  - symbol: "TCS.NS"
+    name: "Tata Consultancy Services Ltd"
+    asset_class: "stocks"
+    currency: "INR"
+    exchange: "NSE"
+    is_yahoo_supported: true
+    description: "Global information technology services and consulting."
+
+  - symbol: "HDFCBANK.NS"
+    name: "HDFC Bank Limited"
+    asset_class: "stocks"
+    currency: "INR"
+    exchange: "NSE"
+    is_yahoo_supported: true
+    description: "Major Indian private-sector banking and financial services."
+
+  - symbol: "INFY.NS"
+    name: "Infosys Limited"
+    asset_class: "stocks"
+    currency: "INR"
+    exchange: "NSE"
+    is_yahoo_supported: true
+    description: "Digital services and software engineering enterprise."
+
+  - symbol: "ICICIBANK.NS"
+    name: "ICICI Bank Limited"
+    asset_class: "stocks"
+    currency: "INR"
+    exchange: "NSE"
+    is_yahoo_supported: true
+    description: "Large private banking network across retail and corporate banking."
+
+  # Mutual Funds / Index ETFs
+  - symbol: "NIFTYBEES.NS"
+    name: "Nippon India ETF Nifty 50 BeES"
+    asset_class: "mutual_funds"
+    currency: "INR"
+    exchange: "NSE"
+    is_yahoo_supported: true
+    description: "Exchange-traded index fund tracking the benchmark Nifty 50 index."
+
+  - symbol: "JUNIORBEES.NS"
+    name: "Nippon India ETF Junior BeES"
+    asset_class: "mutual_funds"
+    currency: "INR"
+    exchange: "NSE"
+    is_yahoo_supported: true
+    description: "Exchange-traded fund tracking the Nifty Next 50 index."
+
+  # Gold
+  - symbol: "GOLDBEES.NS"
+    name: "Nippon India ETF Gold BeES"
+    asset_class: "gold"
+    currency: "INR"
+    exchange: "NSE"
+    is_yahoo_supported: true
+    description: "Gold ETF tracking domestic physical gold bullion prices."
+
+  # Bonds / Gilt Securities
+  - symbol: "SETF10GILT.NS"
+    name: "SBI ETF 10 Year Gilt"
+    asset_class: "bonds"
+    currency: "INR"
+    exchange: "NSE"
+    is_yahoo_supported: true
+    description: "Government securities ETF tracking 10-year Indian sovereign bonds."
+
+  # Cash & Liquid Equivalents
+  - symbol: "LIQUIDBEES.NS"
+    name: "Nippon India ETF Nifty 1D Rate Liquid BeES"
+    asset_class: "cash"
+    currency: "INR"
+    exchange: "NSE"
+    is_yahoo_supported: true
+    description: "Exchange-traded liquid fund reflecting overnight call money rates (daily dividend reinvestment)."
+
+  - symbol: "INR_CASH"
+    name: "Indian Rupee Cash Reserve"
+    asset_class: "cash"
+    currency: "INR"
+    exchange: "RESERVE"
+    is_yahoo_supported: false
+    fixed_annual_yield: 0.055
+    description: "Conceptual risk-free cash reserve yielding 5.5% annual return without market price volatility."

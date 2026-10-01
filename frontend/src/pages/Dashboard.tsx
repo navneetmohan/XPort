@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useProfileStore } from '../stores/useProfileStore';
 import { request, ApiError } from '../services/apiClient';
+import { MarketDataPipelineView } from '../components/MarketDataPipelineView';
 
 export const Dashboard: React.FC = () => {
   const { profile } = useProfileStore();
@@ -61,14 +62,14 @@ export const Dashboard: React.FC = () => {
       >
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-            <span className="badge badge-blue">Foundation Phase 1 (~15%)</span>
-            <span className="badge badge-emerald">Interactive Dashboard</span>
+            <span className="badge badge-blue">Stage 2 & 3: Market Data & Feature Pipeline</span>
+            <span className="badge badge-emerald">Operational</span>
           </div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text-primary)' }}>
-            Portfolio Optimization Overview
+            Portfolio Intelligence & Data Pipeline
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-            Multi-objective trade-off balancing returns, risk, liquidity, and inflation with explainable AI.
+            Automated multi-asset data engineering, technical indicator calculation, and explainable multi-objective optimization.
           </p>
         </div>
 
@@ -114,6 +115,9 @@ export const Dashboard: React.FC = () => {
           </button>
         </div>
       )}
+
+      {/* Live Market Data Acquisition & Feature Engineering Pipeline View */}
+      <MarketDataPipelineView />
 
       {/* Main Grid: Investment Summary, Allocation, Pareto Frontier */}
       <div

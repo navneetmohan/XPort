@@ -23,6 +23,7 @@ def test_docker_compose_specification():
         "postgres",
         "redis",
         "celery-worker",
+        "celery-beat",
         "nginx",
     ]
     for svc in required_services:
@@ -46,10 +47,14 @@ def test_docker_compose_specification():
     assert "postgres" in backend["depends_on"]
     assert "redis" in backend["depends_on"]
 
-    # 5. Check Celery Worker configuration
+    # 5. Check Celery Worker and Beat configuration
     celery = services["celery-worker"]
     assert "celery" in celery["command"]
     assert "redis" in celery["depends_on"]
+
+    beat = services["celery-beat"]
+    assert "beat" in beat["command"]
+    assert "redis" in beat["depends_on"]
 
     # 6. Check Nginx Gateway configuration
     nginx = services["nginx"]

@@ -27,6 +27,71 @@ def health_check_task() -> Dict[str, Any]:
     }
 
 
+@celery.task(name="app.core.tasks.refresh_market_data_task", bind=True)
+def refresh_market_data_task(
+    self,
+    symbols: Optional[List[str]] = None,
+    lookback_days: Optional[int] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Coherent pipeline background task:
+    Celery Beat / Manual Trigger -> refresh_market_data -> fetch -> preprocess -> features -> PostgreSQL.
+    """
+    logger.info(f"Executing refresh_market_data_task with symbols: {symbols}")
+    db = SessionLocal()
+    pipeline_start = datetime.datetime.now(datetime.timezone.utc)
+    try:
+        parsed_start = datetime.date.fromisoformat(start_date) if start_date else None
+        parsed_end = datetime.date.fromisoformat(end_date) if end_date else None
+
+        # 1 & 2. Fetch, preprocess, and persist raw market data
+        md_service = MarketDataService(db)
+        sync_result = md_service.sync_market_data(
+            symbols=symbols,
+            lookback_days=lookback_days,
+            start_date=parsed_start,
+            end_date=parsed_end,
+        )
+
+        # 3 & 4. Compute and persist engineered features
+        fe_summary = {"status": "skipped", "total_upserted": 0, "symbols_processed": []}
+        try:
+            fe_service = FeatureEngineeringService(db)
+            processed_symbols = sync_result.get("symbols_processed", [])
+            target_fe_symbols = processed_symbols if processed_symbols else symbols
+            fe_summary = fe_service.generate_features_for_all(symbols=target_fe_symbols)
+        except Exception as fe_exc:
+            logger.warning(f"Feature calculation notice during refresh pipeline: {fe_exc}")
+            fe_summary = {"status": "notice", "error": str(fe_exc)}
+
+        pipeline_duration = (datetime.datetime.now(datetime.timezone.utc) - pipeline_start).total_seconds()
+
+        # Top-level keys include both market data sync summary and features
+        sync_result["features"] = fe_summary
+        sync_result["pipeline_duration_seconds"] = round(pipeline_duration, 2)
+        sync_result["status"] = "success" if not sync_result.get("failures") else "completed_with_warnings"
+        return sync_result
+    except Exception as exc:
+        logger.error(f"Fatal error executing refresh_market_data_task: {exc}", exc_info=True)
+        return {
+            "status": "error",
+            "error": str(exc),
+            "rows_fetched": 0,
+            "rows_inserted_updated": 0,
+            "failures": [{"symbol": "ALL", "reason": str(exc)}],
+            "symbols_requested": symbols or [],
+            "completed_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        }
+    finally:
+        try:
+            db.close()
+        except Exception:
+            pass
+
+
+# Backward-compatible Celery task alias
 @celery.task(name="app.core.tasks.sync_market_data_task", bind=True)
 def sync_market_data_task(
     self,
@@ -35,40 +100,18 @@ def sync_market_data_task(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """
-    Celery background task for Market Data synchronization.
-    Safely creates its own DB session per execution.
-    """
-    logger.info(f"Executing sync_market_data_task with symbols: {symbols}")
-    db = SessionLocal()
-    try:
-        parsed_start = datetime.date.fromisoformat(start_date) if start_date else None
-        parsed_end = datetime.date.fromisoformat(end_date) if end_date else None
+    """Alias for refresh_market_data_task for backward compatibility."""
+    return refresh_market_data_task(
+        symbols=symbols,
+        lookback_days=lookback_days,
+        start_date=start_date,
+        end_date=end_date,
+    )
 
-        service = MarketDataService(db)
-        result = service.sync_market_data(
-            symbols=symbols,
-            lookback_days=lookback_days,
-            start_date=parsed_start,
-            end_date=parsed_end,
-        )
-        # Automatically compute technical indicators on freshly synced data if database session active
-        try:
-            fe_service = FeatureEngineeringService(db)
-            fe_service.generate_features_for_all(symbols=symbols)
-        except Exception as fe_exc:
-            logger.warning(f"Feature calculation notice during sync task: {fe_exc}")
 
-        return result
-    except Exception as exc:
-        logger.error(f"Error executing sync_market_data_task: {exc}", exc_info=True)
-        return {
-            "status": "error",
-            "error": str(exc),
-            "symbols_requested": symbols or [],
-        }
-    finally:
-        db.close()
+# Function aliases for direct task dispatching
+refresh_market_data = refresh_market_data_task
+sync_market_data = sync_market_data_task
 
 
 @celery.task(name="app.core.tasks.calculate_features_task")

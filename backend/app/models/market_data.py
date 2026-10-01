@@ -1,4 +1,5 @@
 import datetime
+from typing import Optional
 from sqlalchemy import BigInteger, Date, DateTime, Numeric, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
 from app.db.base import Base
@@ -12,8 +13,9 @@ class MarketData(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     symbol: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    asset_class: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)
     date: Mapped[datetime.date] = mapped_column(Date, nullable=False, index=True)
-    open: Mapped[float] = mapped_column(Numeric(14, 4), nullable=True)
+    open: Mapped[Optional[float]] = mapped_column(Numeric(14, 4), nullable=True)
     high: Mapped[float] = mapped_column(Numeric(14, 4), nullable=True)
     low: Mapped[float] = mapped_column(Numeric(14, 4), nullable=True)
     close: Mapped[float] = mapped_column(Numeric(14, 4), nullable=True)

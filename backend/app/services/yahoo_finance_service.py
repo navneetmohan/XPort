@@ -60,12 +60,14 @@ class YahooFinanceService:
     ) -> List[Dict[str, Any]]:
         """Fetch and normalize data for a single symbol."""
         try:
+            from app.core.config import settings
             df = yf.download(
                 tickers=symbol,
                 start=start.strftime("%Y-%m-%d"),
                 end=(end + datetime.timedelta(days=1)).strftime("%Y-%m-%d"),
                 progress=False,
                 auto_adjust=False,
+                timeout=settings.YAHOO_FINANCE_TIMEOUT,
             )
 
             if df is None or df.empty:

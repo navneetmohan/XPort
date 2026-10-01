@@ -27,7 +27,7 @@ else:
 
 celery.conf.beat_schedule = {
     "daily-market-data-sync": {
-        "task": "app.core.tasks.sync_market_data_task",
+        "task": "app.core.tasks.refresh_market_data_task",
         "schedule": crontab(
             minute=minute_val,
             hour=hour_val,

@@ -4,7 +4,14 @@ from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.instruments import (
+    get_all_instruments,
+    get_asset_class_for_symbol,
+    get_yahoo_supported_symbols,
+)
 from app.repositories.market_data_repository import MarketDataRepository
+from app.repositories.engineered_features_repository import EngineeredFeaturesRepository
+from app.services.data_preprocessor import DataPreprocessor, DataQualityReport
 from app.services.yahoo_finance_service import YahooFinanceService
 
 logger = logging.getLogger(__name__)
@@ -12,15 +19,24 @@ logger = logging.getLogger(__name__)
 
 class MarketDataService:
     """
-    Orchestration service combining YahooFinanceService data acquisition,
-    data validation rules, and MarketDataRepository persistence.
-    Independent of FastAPI and safe for background Celery tasks.
+    Market Data Service responsible for coordinating:
+    - Yahoo Finance data acquisition
+    - Dedicated preprocessing and data hygiene (via DataPreprocessor)
+    - Data persistence and querying (via MarketDataRepository)
+    - Comprehensive data quality reporting
     """
 
-    def __init__(self, db: Session, yf_service: Optional[YahooFinanceService] = None):
+    def __init__(
+        self,
+        db: Session,
+        yf_service: Optional[YahooFinanceService] = None,
+        preprocessor: Optional[DataPreprocessor] = None,
+    ):
         self.db = db
         self.repository = MarketDataRepository(db)
+        self.features_repo = EngineeredFeaturesRepository(db)
         self.yf_service = yf_service or YahooFinanceService()
+        self.preprocessor = preprocessor or DataPreprocessor()
 
     def sync_market_data(
         self,
@@ -31,7 +47,8 @@ class MarketDataService:
     ) -> Dict[str, Any]:
         """
         Synchronizes historical OHLCV market data for requested symbols.
-        Returns a detailed summary of synchronization results.
+        Applies preprocessing, validation, deduplication, and persists to database.
+        Returns a detailed data quality and sync summary.
         """
         target_symbols = symbols or settings.MARKET_DATA_DEFAULT_SYMBOLS
         lookback = lookback_days or settings.MARKET_DATA_DEFAULT_LOOKBACK_DAYS
@@ -44,69 +61,125 @@ class MarketDataService:
         sync_start_time = datetime.datetime.now(datetime.timezone.utc)
         logger.info(f"Starting market data synchronization for symbols: {cleaned_symbols}")
 
-        try:
-            raw_records = self.yf_service.fetch_historical_ohlcv(
-                symbols=cleaned_symbols,
-                start_date=start_date,
-                end_date=end_date,
-                lookback_days=lookback if not start_date else None,
-            )
-        except Exception as exc:
-            logger.error(f"Failed to fetch market data from yfinance: {exc}", exc_info=True)
-            return {
-                "symbols_requested": cleaned_symbols,
-                "symbols_processed": [],
-                "rows_fetched": 0,
-                "rows_inserted_updated": 0,
-                "rows_rejected": 0,
-                "failures": [{"symbol": "ALL", "reason": str(exc)}],
-                "sync_timestamp": sync_start_time.isoformat(),
-            }
+        symbols_processed: List[str] = []
+        failures: List[Dict[str, Any]] = []
+        quality_reports: List[Dict[str, Any]] = []
+        total_fetched = 0
+        total_upserted = 0
+        total_rejected = 0
+        total_duplicates = 0
+        total_missing = 0
 
-        valid_records: List[Dict[str, Any]] = []
-        rejected_records: List[Dict[str, Any]] = []
-        processed_symbols = set()
+        # Process instrument by instrument so failure in one does not crash the entire pipeline
+        for symbol in cleaned_symbols:
+            try:
+                raw_records = self.yf_service.fetch_historical_ohlcv(
+                    symbols=[symbol],
+                    start_date=start_date,
+                    end_date=end_date,
+                    lookback_days=lookback if not start_date else None,
+                )
+                total_fetched += len(raw_records)
 
-        for rec in raw_records:
-            is_valid, reason = self.validate_record(rec)
-            if is_valid:
-                valid_records.append(rec)
-                processed_symbols.add(rec["symbol"])
-            else:
-                rejected_records.append({"record": rec, "reason": reason})
-                logger.warning(
-                    f"Rejected market data record for {rec.get('symbol')} on {rec.get('date')}: {reason}"
+                if not raw_records:
+                    failures.append({"symbol": symbol, "reason": "No data returned from upstream Yahoo Finance"})
+                    continue
+
+                # Run through dedicated preprocessing layer
+                asset_class = get_asset_class_for_symbol(symbol)
+                clean_records, report = self.preprocessor.preprocess_symbol_data(
+                    raw_records=raw_records,
+                    symbol=symbol,
+                    asset_class=asset_class,
                 )
 
-        upserted_count = 0
-        if valid_records:
-            upserted_count, _ = self.repository.upsert_records(valid_records)
+                quality_reports.append(report.to_dict())
+                total_rejected += report.invalid_record_count
+                total_duplicates += report.duplicate_count
+                total_missing += report.missing_value_count
 
-        failures = []
-        for s in cleaned_symbols:
-            if s not in processed_symbols:
-                failures.append({"symbol": s, "reason": "No valid records fetched or saved"})
+                if clean_records:
+                    upserted, _ = self.repository.upsert_records(clean_records)
+                    total_upserted += upserted
+                    symbols_processed.append(symbol)
+                else:
+                    failures.append({
+                        "symbol": symbol,
+                        "reason": f"All {len(raw_records)} records failed preprocessing validation",
+                    })
+
+            except Exception as exc:
+                logger.error(f"Error processing market data for {symbol}: {exc}", exc_info=True)
+                failures.append({"symbol": symbol, "reason": str(exc)})
 
         summary = {
             "symbols_requested": cleaned_symbols,
-            "symbols_processed": sorted(list(processed_symbols)),
-            "rows_fetched": len(raw_records),
-            "rows_inserted_updated": upserted_count,
-            "rows_rejected": len(rejected_records),
+            "symbols_processed": sorted(symbols_processed),
+            "rows_fetched": total_fetched,
+            "rows_inserted_updated": total_upserted,
+            "rows_rejected": total_rejected,
+            "duplicates_detected": total_duplicates,
+            "missing_values_detected": total_missing,
+            "quality_reports": quality_reports,
             "failures": failures,
             "sync_timestamp": sync_start_time.isoformat(),
         }
 
         logger.info(
-            f"Market data synchronization complete. Fetched: {len(raw_records)}, "
-            f"Persisted: {upserted_count}, Rejected: {len(rejected_records)}"
+            f"Market data synchronization complete. Fetched: {total_fetched}, "
+            f"Persisted: {total_upserted}, Rejected: {total_rejected}, Failures: {len(failures)}"
         )
         return summary
 
+    def get_data_status(self) -> Dict[str, Any]:
+        """
+        Retrieves overall market data & features pipeline status across the universe.
+        """
+        all_instruments = get_all_instruments()
+        market_coverage = self.repository.get_symbol_coverage()
+        feature_coverage = self.features_repo.get_features_coverage()
+
+        market_map = {c["symbol"]: c for c in market_coverage}
+        feature_map = {f["symbol"]: f for f in feature_coverage}
+
+        instruments_status = []
+        for inst in all_instruments:
+            sym = inst["symbol"]
+            m_stat = market_map.get(sym, {})
+            f_stat = feature_map.get(sym, {})
+
+            instruments_status.append({
+                "symbol": sym,
+                "name": inst.get("name", sym),
+                "asset_class": inst.get("asset_class", "stocks"),
+                "is_yahoo_supported": inst.get("is_yahoo_supported", True),
+                "market_data_records": m_stat.get("record_count", 0),
+                "market_earliest_date": m_stat.get("earliest_date"),
+                "market_latest_date": m_stat.get("latest_date"),
+                "features_records": f_stat.get("record_count", 0),
+                "features_earliest_date": f_stat.get("earliest_date"),
+                "features_latest_date": f_stat.get("latest_date"),
+                "has_market_data": m_stat.get("record_count", 0) > 0,
+                "has_features": f_stat.get("record_count", 0) > 0,
+            })
+
+        total_market_records = sum(c.get("record_count", 0) for c in market_coverage)
+        total_feature_records = self.features_repo.get_features_count()
+
+        return {
+            "status": "operational",
+            "total_universe_instruments": len(all_instruments),
+            "instruments_with_market_data": len(market_coverage),
+            "instruments_with_features": len(feature_coverage),
+            "total_market_records": total_market_records,
+            "total_feature_records": total_feature_records,
+            "instruments": instruments_status,
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        }
+
     def validate_record(self, rec: Dict[str, Any]) -> Tuple[bool, str]:
         """
-        Validates a single market data record according to Stage 2 validation rules.
-        Returns (is_valid, failure_reason).
+        Direct validation method maintained for backward compatibility.
         """
         symbol = rec.get("symbol")
         if not symbol or not isinstance(symbol, str) or not symbol.strip():

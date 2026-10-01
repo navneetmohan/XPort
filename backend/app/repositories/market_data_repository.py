@@ -46,6 +46,7 @@ class MarketDataRepository:
             upsert_stmt = stmt.on_conflict_do_update(
                 constraint="uq_market_data_symbol_date",
                 set_={
+                    "asset_class": func.coalesce(stmt.excluded.asset_class, MarketData.asset_class),
                     "open": stmt.excluded.open,
                     "high": stmt.excluded.high,
                     "low": stmt.excluded.low,
@@ -75,6 +76,8 @@ class MarketDataRepository:
             )
 
             if existing:
+                if rec.get("asset_class"):
+                    existing.asset_class = rec.get("asset_class")
                 existing.open = rec.get("open")
                 existing.high = rec.get("high")
                 existing.low = rec.get("low")
@@ -84,6 +87,7 @@ class MarketDataRepository:
             else:
                 new_item = MarketData(
                     symbol=symbol,
+                    asset_class=rec.get("asset_class"),
                     date=date_val,
                     open=rec.get("open"),
                     high=rec.get("high"),
@@ -134,12 +138,24 @@ class MarketDataRepository:
         records = list(self.db.scalars(stmt).all())
         return records, total_count
 
+    def get_latest_market_data(self, symbol: str) -> Optional[MarketData]:
+        """Retrieve the most recent market data bar for a symbol."""
+        clean_symbol = symbol.strip().upper()
+        stmt = (
+            select(MarketData)
+            .where(MarketData.symbol == clean_symbol)
+            .order_by(MarketData.date.desc())
+            .limit(1)
+        )
+        return self.db.scalar(stmt)
+
     def get_symbol_coverage(self) -> List[Dict[str, Any]]:
         """
         Retrieves summary statistics for each available symbol in the database.
         """
         stmt = select(
             MarketData.symbol,
+            func.max(MarketData.asset_class).label("asset_class"),
             func.min(MarketData.date).label("earliest_date"),
             func.max(MarketData.date).label("latest_date"),
             func.count(MarketData.id).label("record_count"),
@@ -151,6 +167,7 @@ class MarketDataRepository:
         for row in results:
             coverage.append({
                 "symbol": row.symbol,
+                "asset_class": row.asset_class,
                 "earliest_date": row.earliest_date,
                 "latest_date": row.latest_date,
                 "record_count": row.record_count,

@@ -45,9 +45,11 @@ class EngineeredFeaturesRepository:
             upsert_stmt = stmt.on_conflict_do_update(
                 constraint="uq_engineered_features_symbol_date",
                 set_={
+                    "market_data_id": func.coalesce(stmt.excluded.market_data_id, EngineeredFeatures.market_data_id),
                     "sma_20": stmt.excluded.sma_20,
                     "sma_50": stmt.excluded.sma_50,
                     "ema_20": stmt.excluded.ema_20,
+                    "ema_50": stmt.excluded.ema_50,
                     "rsi_14": stmt.excluded.rsi_14,
                     "macd": stmt.excluded.macd,
                     "macd_signal": stmt.excluded.macd_signal,
@@ -77,9 +79,12 @@ class EngineeredFeaturesRepository:
             )
 
             if existing:
+                if rec.get("market_data_id") is not None:
+                    existing.market_data_id = rec.get("market_data_id")
                 existing.sma_20 = rec.get("sma_20")
                 existing.sma_50 = rec.get("sma_50")
                 existing.ema_20 = rec.get("ema_20")
+                existing.ema_50 = rec.get("ema_50")
                 existing.rsi_14 = rec.get("rsi_14")
                 existing.macd = rec.get("macd")
                 existing.macd_signal = rec.get("macd_signal")
@@ -90,9 +95,11 @@ class EngineeredFeaturesRepository:
                 new_item = EngineeredFeatures(
                     symbol=symbol,
                     date=date_val,
+                    market_data_id=rec.get("market_data_id"),
                     sma_20=rec.get("sma_20"),
                     sma_50=rec.get("sma_50"),
                     ema_20=rec.get("ema_20"),
+                    ema_50=rec.get("ema_50"),
                     rsi_14=rec.get("rsi_14"),
                     macd=rec.get("macd"),
                     macd_signal=rec.get("macd_signal"),
@@ -130,3 +137,45 @@ class EngineeredFeaturesRepository:
         stmt = stmt.offset(skip).limit(limit)
 
         return list(self.db.scalars(stmt).all())
+
+    def get_features_count(self, symbol: Optional[str] = None) -> int:
+        """Count total engineered feature records, optionally by symbol."""
+        stmt = select(func.count()).select_from(EngineeredFeatures)
+        if symbol:
+            clean_symbol = symbol.strip().upper()
+            stmt = stmt.where(EngineeredFeatures.symbol == clean_symbol)
+        return self.db.scalar(stmt) or 0
+
+    def get_latest_features(self, symbol: str) -> Optional[EngineeredFeatures]:
+        """Retrieve the most recent engineered features record for a symbol."""
+        clean_symbol = symbol.strip().upper()
+        stmt = (
+            select(EngineeredFeatures)
+            .where(EngineeredFeatures.symbol == clean_symbol)
+            .order_by(EngineeredFeatures.date.desc())
+            .limit(1)
+        )
+        return self.db.scalar(stmt)
+
+    def get_features_coverage(self) -> List[Dict[str, Any]]:
+        """Retrieves summary statistics for engineered features per symbol."""
+        stmt = (
+            select(
+                EngineeredFeatures.symbol,
+                func.min(EngineeredFeatures.date).label("earliest_date"),
+                func.max(EngineeredFeatures.date).label("latest_date"),
+                func.count(EngineeredFeatures.id).label("record_count"),
+            )
+            .group_by(EngineeredFeatures.symbol)
+            .order_by(EngineeredFeatures.symbol.asc())
+        )
+        results = self.db.execute(stmt).all()
+        return [
+            {
+                "symbol": row.symbol,
+                "earliest_date": row.earliest_date,
+                "latest_date": row.latest_date,
+                "record_count": row.record_count,
+            }
+            for row in results
+        ]

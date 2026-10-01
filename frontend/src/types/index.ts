@@ -90,3 +90,76 @@ export interface NotImplementedError {
   stage_scheduled: string;
   endpoint: string;
 }
+
+export interface MarketDataRecord {
+  id: number;
+  symbol: string;
+  asset_class?: string;
+  date: string;
+  open?: number;
+  high?: number;
+  low?: number;
+  close?: number;
+  adj_close?: number;
+  volume?: number;
+}
+
+export interface EngineeredFeatureRecord {
+  id: number;
+  symbol: string;
+  date: string;
+  market_data_id?: number;
+  sma_20?: number;
+  sma_50?: number;
+  ema_20?: number;
+  ema_50?: number;
+  rsi_14?: number;
+  macd?: number;
+  macd_signal?: number;
+  macd_histogram?: number;
+  daily_return?: number;
+  rolling_volatility?: number;
+}
+
+export interface PipelineInstrumentStatus {
+  symbol: string;
+  name: string;
+  asset_class: string;
+  is_yahoo_supported: boolean;
+  market_data_records: number;
+  market_earliest_date?: string;
+  market_latest_date?: string;
+  features_records: number;
+  features_earliest_date?: string;
+  features_latest_date?: string;
+  has_market_data: boolean;
+  has_features: boolean;
+}
+
+export interface PipelineStatus {
+  status: string;
+  total_universe_instruments: number;
+  instruments_with_market_data: number;
+  instruments_with_features: number;
+  total_market_records: number;
+  total_feature_records: number;
+  instruments: PipelineInstrumentStatus[];
+  timestamp: string;
+}
+
+export interface PipelineTaskStatus {
+  task_id: string;
+  status: string;
+  ready: boolean;
+  successful?: boolean;
+  result?: any;
+  error?: string;
+}
+
+export interface MarketDataRefreshResponse {
+  task_id: string;
+  status: string;
+  message: string;
+  symbols_requested: string[];
+}
+
