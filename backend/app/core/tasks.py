@@ -6,7 +6,10 @@ from app.db.session import SessionLocal
 from app.repositories.recommendation_repository import RecommendationRepository
 from app.services.feature_engineering_service import FeatureEngineeringService
 from app.services.market_data_service import MarketDataService
-from app.services.portfolio_optimizer import PortfolioOptimizer
+try:
+    from app.services.portfolio_optimizer import PortfolioOptimizer
+except ImportError:
+    PortfolioOptimizer = None
 
 logger = logging.getLogger(__name__)
 
@@ -119,6 +122,9 @@ def run_portfolio_optimization_task(
         fe_service.generate_features_for_all(symbols=symbols)
 
         # Run NSGA-II Optimization
+        global PortfolioOptimizer
+        if PortfolioOptimizer is None:
+            from app.services.portfolio_optimizer import PortfolioOptimizer
         optimizer = PortfolioOptimizer(db)
         result = optimizer.optimize(
             symbols=symbols or ["RELIANCE.NS", "TCS.NS", "HDFCBANK.NS", "INFY.NS", "ICICIBANK.NS"],
