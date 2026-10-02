@@ -1,8 +1,11 @@
 import uuid
 from typing import Optional
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+
+from app.api.v1.endpoints.health import check_redis_connection
+from app.core.celery_app import celery
 from app.core.tasks import run_portfolio_optimization_task
 from app.db.session import get_db
 from app.repositories.recommendation_repository import RecommendationRepository
@@ -19,7 +22,7 @@ router = APIRouter()
 @router.post(
     "",
     summary="Submit Portfolio Recommendation Request (NSGA-II)",
-    description="Submits an asynchronous NSGA-II multi-objective portfolio optimization task to Celery.",
+    description="Submits an asynchronous NSGA-II multi-objective portfolio optimization task to Celery or local background runner.",
     responses={
         202: {"model": RecommendationResponse},
         501: {"model": NotImplementedResponse},
@@ -27,6 +30,7 @@ router = APIRouter()
 )
 async def submit_recommendation(
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ):
     # Parse request body safely to maintain backward compatibility with 501 placeholder tests
@@ -54,17 +58,31 @@ async def submit_recommendation(
     rec_id = str(uuid.uuid4())
     repo = RecommendationRepository(db)
 
-    try:
-        task = run_portfolio_optimization_task.delay(
+    task_id = None
+    is_eager = getattr(celery.conf, "task_always_eager", False)
+    redis_available = is_eager or check_redis_connection()
+
+    if redis_available:
+        try:
+            task = run_portfolio_optimization_task.delay(
+                symbols=target_symbols,
+                pop_size=pop_size,
+                generations=generations,
+                recommendation_id=rec_id,
+            )
+            task_id = task.id
+        except Exception:
+            task_id = None
+
+    if task_id is None:
+        task_id = f"local-task-{rec_id[:8]}"
+        background_tasks.add_task(
+            run_portfolio_optimization_task.run,
             symbols=target_symbols,
             pop_size=pop_size,
             generations=generations,
             recommendation_id=rec_id,
         )
-        task_id = task.id
-    except Exception:
-        # Fallback if Redis/Celery is running eagerly or offline in test mode
-        task_id = f"local-task-{rec_id[:8]}"
 
     repo.create_recommendation(
         symbols={"symbols": target_symbols},

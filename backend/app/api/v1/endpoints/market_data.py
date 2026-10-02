@@ -1,10 +1,12 @@
 import datetime
 import logging
+import uuid
 from typing import Any, Dict, Optional
 from celery.result import AsyncResult
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from app.api.v1.endpoints.health import check_redis_connection
 from app.core.celery_app import celery
 from app.core.config import settings
 from app.core.instruments import get_all_asset_classes, get_all_instruments
@@ -28,6 +30,9 @@ from app.services.market_data_service import MarketDataService
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+# In-memory status store for tasks executed in local development mode without Celery/Redis
+LOCAL_TASK_STORE: Dict[str, Dict[str, Any]] = {}
 
 
 @router.get(
@@ -108,9 +113,10 @@ def get_instruments():
     response_model=MarketDataRefreshResponse,
     status_code=status.HTTP_202_ACCEPTED,
     summary="Trigger Market Data & Feature Pipeline Refresh",
-    description="Asynchronously triggers the end-to-end data acquisition, preprocessing, and feature engineering pipeline via Celery.",
+    description="Asynchronously triggers the end-to-end data acquisition, preprocessing, and feature engineering pipeline via Celery or local background runner.",
 )
 def trigger_market_data_refresh(
+    background_tasks: BackgroundTasks,
     request: Optional[MarketDataRefreshRequest] = None,
 ):
     req = request or MarketDataRefreshRequest()
@@ -120,19 +126,60 @@ def trigger_market_data_refresh(
     start_str = req.start_date.isoformat() if req.start_date else None
     end_str = req.end_date.isoformat() if req.end_date else None
 
-    try:
-        task = refresh_market_data_task.delay(
-            symbols=symbols,
-            lookback_days=lookback,
-            start_date=start_str,
-            end_date=end_str,
-        )
-        task_id = task.id
-    except Exception as exc:
-        logger.error(f"Failed to dispatch Celery refresh task: {exc}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to dispatch refresh task: {str(exc)}",
+    is_eager = getattr(celery.conf, "task_always_eager", False)
+    redis_available = is_eager or check_redis_connection()
+
+    task_id = None
+    if redis_available:
+        try:
+            task = refresh_market_data_task.delay(
+                symbols=symbols,
+                lookback_days=lookback,
+                start_date=start_str,
+                end_date=end_str,
+            )
+            task_id = task.id
+        except Exception as exc:
+            logger.warning(f"Failed to dispatch Celery refresh task ({exc}). Falling back to local background execution.")
+            task_id = None
+
+    if task_id is None:
+        task_id = f"local-refresh-{uuid.uuid4().hex[:12]}"
+        LOCAL_TASK_STORE[task_id] = {
+            "status": "PENDING",
+            "ready": False,
+            "successful": None,
+            "result": None,
+            "error": None,
+        }
+
+        def _execute_refresh_locally(tid: str, syms, lk, s_date, e_date):
+            LOCAL_TASK_STORE[tid]["status"] = "STARTED"
+            try:
+                res = refresh_market_data_task.run(
+                    symbols=syms,
+                    lookback_days=lk,
+                    start_date=s_date,
+                    end_date=e_date,
+                )
+                LOCAL_TASK_STORE[tid]["status"] = "SUCCESS"
+                LOCAL_TASK_STORE[tid]["ready"] = True
+                LOCAL_TASK_STORE[tid]["successful"] = True
+                LOCAL_TASK_STORE[tid]["result"] = res
+            except Exception as exc:
+                logger.error(f"Local background refresh error: {exc}", exc_info=True)
+                LOCAL_TASK_STORE[tid]["status"] = "FAILURE"
+                LOCAL_TASK_STORE[tid]["ready"] = True
+                LOCAL_TASK_STORE[tid]["successful"] = False
+                LOCAL_TASK_STORE[tid]["error"] = str(exc)
+
+        background_tasks.add_task(
+            _execute_refresh_locally,
+            task_id,
+            symbols,
+            lookback,
+            start_str,
+            end_str,
         )
 
     return MarketDataRefreshResponse(
@@ -148,9 +195,10 @@ def trigger_market_data_refresh(
     response_model=MarketDataSyncResponse,
     status_code=status.HTTP_202_ACCEPTED,
     summary="Trigger Market Data Sync",
-    description="Asynchronously trigger market data acquisition and persistence via Celery.",
+    description="Asynchronously trigger market data acquisition and persistence via Celery or local background runner.",
 )
 def trigger_market_data_sync(
+    background_tasks: BackgroundTasks,
     request: Optional[MarketDataSyncRequest] = None,
 ):
     req = request or MarketDataSyncRequest()
@@ -160,19 +208,60 @@ def trigger_market_data_sync(
     start_str = req.start_date.isoformat() if req.start_date else None
     end_str = req.end_date.isoformat() if req.end_date else None
 
-    try:
-        task = sync_market_data_task.delay(
-            symbols=symbols,
-            lookback_days=lookback,
-            start_date=start_str,
-            end_date=end_str,
-        )
-        task_id = task.id
-    except Exception as exc:
-        logger.error(f"Failed to dispatch Celery sync task: {exc}", exc_info=True)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to dispatch synchronization task: {str(exc)}",
+    is_eager = getattr(celery.conf, "task_always_eager", False)
+    redis_available = is_eager or check_redis_connection()
+
+    task_id = None
+    if redis_available:
+        try:
+            task = sync_market_data_task.delay(
+                symbols=symbols,
+                lookback_days=lookback,
+                start_date=start_str,
+                end_date=end_str,
+            )
+            task_id = task.id
+        except Exception as exc:
+            logger.warning(f"Failed to dispatch Celery sync task ({exc}). Falling back to local background execution.")
+            task_id = None
+
+    if task_id is None:
+        task_id = f"local-sync-{uuid.uuid4().hex[:12]}"
+        LOCAL_TASK_STORE[task_id] = {
+            "status": "PENDING",
+            "ready": False,
+            "successful": None,
+            "result": None,
+            "error": None,
+        }
+
+        def _execute_sync_locally(tid: str, syms, lk, s_date, e_date):
+            LOCAL_TASK_STORE[tid]["status"] = "STARTED"
+            try:
+                res = sync_market_data_task.run(
+                    symbols=syms,
+                    lookback_days=lk,
+                    start_date=s_date,
+                    end_date=e_date,
+                )
+                LOCAL_TASK_STORE[tid]["status"] = "SUCCESS"
+                LOCAL_TASK_STORE[tid]["ready"] = True
+                LOCAL_TASK_STORE[tid]["successful"] = True
+                LOCAL_TASK_STORE[tid]["result"] = res
+            except Exception as exc:
+                logger.error(f"Local background sync error: {exc}", exc_info=True)
+                LOCAL_TASK_STORE[tid]["status"] = "FAILURE"
+                LOCAL_TASK_STORE[tid]["ready"] = True
+                LOCAL_TASK_STORE[tid]["successful"] = False
+                LOCAL_TASK_STORE[tid]["error"] = str(exc)
+
+        background_tasks.add_task(
+            _execute_sync_locally,
+            task_id,
+            symbols,
+            lookback,
+            start_str,
+            end_str,
         )
 
     return MarketDataSyncResponse(
@@ -187,9 +276,20 @@ def trigger_market_data_sync(
     "/task/{task_id}",
     response_model=PipelineTaskStatusResponse,
     summary="Query Asynchronous Pipeline Task Status",
-    description="Query Celery task execution status, completion, and returned pipeline summary.",
+    description="Query Celery or local task execution status, completion, and returned pipeline summary.",
 )
 def get_task_status(task_id: str):
+    if task_id in LOCAL_TASK_STORE:
+        info = LOCAL_TASK_STORE[task_id]
+        return PipelineTaskStatusResponse(
+            task_id=task_id,
+            status=info.get("status", "PENDING"),
+            ready=info.get("ready", False),
+            successful=info.get("successful"),
+            result=info.get("result"),
+            error=info.get("error"),
+        )
+
     try:
         async_result = AsyncResult(task_id, app=celery)
         task_status = async_result.status

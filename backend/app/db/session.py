@@ -6,13 +6,55 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Create engine with connection pooling and pre-ping to handle stale connections
-engine = create_engine(
-    settings.DATABASE_URL,
-    pool_pre_ping=True,
-    pool_recycle=3600,
-)
+def _init_engine():
+    db_url = settings.DATABASE_URL
+    if db_url.startswith("postgresql"):
+        try:
+            # Test PostgreSQL connectivity with a short timeout
+            test_engine = create_engine(
+                db_url,
+                connect_args={"connect_timeout": 2},
+                pool_pre_ping=True,
+                pool_recycle=3600,
+            )
+            with test_engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            logger.info("Connected to PostgreSQL database.")
+            return test_engine
+        except Exception as exc:
+            logger.warning(
+                f"PostgreSQL connection to {db_url} failed ({exc}). "
+                "Falling back to local SQLite database (sqlite:///./xport_local.db) for standalone development."
+            )
+            fallback_engine = create_engine(
+                "sqlite:///./xport_local.db",
+                connect_args={"check_same_thread": False},
+            )
+            try:
+                from app.db.base import Base
+                import app.models  # noqa: F401
+                Base.metadata.create_all(bind=fallback_engine)
+                logger.info("Initialized local SQLite schema successfully.")
+            except Exception as schema_err:
+                logger.error(f"Failed to auto-create SQLite schema: {schema_err}")
+            return fallback_engine
+    elif db_url.startswith("sqlite"):
+        sqlite_engine = create_engine(
+            db_url,
+            connect_args={"check_same_thread": False},
+        )
+        try:
+            from app.db.base import Base
+            import app.models  # noqa: F401
+            Base.metadata.create_all(bind=sqlite_engine)
+        except Exception:
+            pass
+        return sqlite_engine
+    else:
+        return create_engine(db_url, pool_pre_ping=True, pool_recycle=3600)
 
+
+engine = _init_engine()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
